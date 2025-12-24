@@ -1,63 +1,59 @@
 using UnityEngine;
 using UnityEngine.AI;
 
-public enum DogState
-{
-    Idle,        // ждёт
-    Searching,   // бежит к мячу
-    Carrying,    // несёт мяч
-    Returning    // возвращается к игроку
-}
-
 public class DogAI : MonoBehaviour
 {
     public NavMeshAgent agent;
-    public Transform player;
     public Transform ball;
+    public Transform player;
 
-    public DogState currentState;
+    private enum State
+    {
+        Idle,
+        GoToBall,
+        ReturnToPlayer
+    }
+
+    private State state = State.Idle;
 
     void Update()
     {
-        switch (currentState)
+        if (state == State.GoToBall)
         {
-            case DogState.Idle:
-                break;
+            agent.SetDestination(ball.position);
 
-            case DogState.Searching:
-                agent.SetDestination(ball.position);
+            if (Vector3.Distance(transform.position, ball.position) < 1.2f)
+                PickUpBall();
+        }
 
-                if (Vector3.Distance(transform.position, ball.position) < 1.2f)
-                {
-                    PickUpBall();
-                }
-                break;
+        if (state == State.ReturnToPlayer)
+        {
+            agent.SetDestination(player.position);
 
-            case DogState.Carrying:
-                agent.SetDestination(player.position);
+            if (Vector3.Distance(transform.position, player.position) < 1.5f)
+                DropBall();
+        }
 
-                if (Vector3.Distance(transform.position, player.position) < 1.5f)
-                {
-                    DropBall();
-                }
-                break;
+        if (state == State.ReturnToPlayer)
+        {
+            ball.transform.localPosition = new Vector3(0,0.7f,0);
         }
     }
 
     public void GoFetch()
     {
-        currentState = DogState.Searching;
+        state = State.GoToBall;
     }
 
     void PickUpBall()
     {
-        ball.SetParent(transform);
-        ball.localPosition = new Vector3(0, 0.5f, 0.5f);
-
         Rigidbody rb = ball.GetComponent<Rigidbody>();
         rb.isKinematic = true;
 
-        currentState = DogState.Carrying;
+        ball.SetParent(transform);
+        //ball.localPosition = new Vector3(0, 0.4f, 0.6f);
+
+        state = State.ReturnToPlayer;
     }
 
     void DropBall()
@@ -67,6 +63,6 @@ public class DogAI : MonoBehaviour
         Rigidbody rb = ball.GetComponent<Rigidbody>();
         rb.isKinematic = false;
 
-        currentState = DogState.Idle;
+        state = State.Idle;
     }
 }
